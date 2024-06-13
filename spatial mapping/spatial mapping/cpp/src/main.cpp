@@ -10,15 +10,18 @@ void print(std::string msg_prefix, sl::ERROR_CODE err_code = sl::ERROR_CODE::SUC
 
 int main(int argc, char** argv) {
     Camera zed;
+
     InitParameters init_parameters;
     init_parameters.depth_mode = DEPTH_MODE::NEURAL;
     init_parameters.coordinate_units = UNIT::METER;
     init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP;
     init_parameters.depth_maximum_distance = 8.0;
+
     sl::Mat roi;
     parse_args(argc, argv, init_parameters, roi);
 
     auto returned_state = zed.open(init_parameters);
+
     if (returned_state != ERROR_CODE::SUCCESS) {
         print("Open Camera", returned_state, "\nExit program.");
         zed.close();
@@ -107,6 +110,7 @@ int main(int argc, char** argv) {
     }
 
     map.save("MyMap", sl::MESH_FILE_FORMAT::PLY);
+
     image.free();
     point_cloud.free();
     zed.close();
@@ -124,12 +128,12 @@ void parse_args(int argc, char** argv, InitParameters& param, sl::Mat& roi) {
         }
 
         unsigned int a, b, c, d, port;
-        if (sscanf(arg.c_str(), "%u.%u.%u.%u:%d", &a, &b, &c, &d, &port) == 5) {
+        if (sscanf_s(arg.c_str(), "%u.%u.%u.%u:%d", &a, &b, &c, &d, &port) == 5) {
             string ip_adress = to_string(a) + "." + to_string(b) + "." + to_string(c) + "." + to_string(d);
             param.input.setFromStream(String(ip_adress.c_str()), port);
             cout << "[Sample] Using Stream input, IP: " << ip_adress << ", port: " << port << endl;
         }
-        else if (sscanf(arg.c_str(), "%u.%u.%u.%u", &a, &b, &c, &d) == 4) {
+        else if (sscanf_s(arg.c_str(), "%u.%u.%u.%u", &a, &b, &c, &d) == 4) {
             param.input.setFromStream(String(argv[1]));
             cout << "[Sample] Using Stream input, IP: " << argv[1] << endl;
         }
