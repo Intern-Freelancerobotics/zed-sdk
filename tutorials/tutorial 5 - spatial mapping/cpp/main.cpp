@@ -24,7 +24,7 @@
 using namespace std;
 using namespace sl;
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
 
     // Create a ZED camera object
     Camera zed;
@@ -57,11 +57,11 @@ int main(int argc, char **argv) {
         cout << "Error " << returned_state << ", exit program.\n";
         return EXIT_FAILURE;
     }
-    
+
     // Grab data during 500 frames
     int i = 0;
     sl::Mesh mesh; // Create a mesh object
-    while (i < 500) {
+    while (i < 1500) {
         // For each new grab, mesh data is updated 
         if (zed.grab() == ERROR_CODE::SUCCESS) {
             // In the background, spatial mapping will use newly retrieved images, depth and pose to update the mesh
@@ -79,8 +79,8 @@ int main(int argc, char **argv) {
     cout << "Filtering Mesh...\n";
     mesh.filter(sl::MeshFilterParameters::MESH_FILTER::LOW); // Filter the mesh (remove unnecessary vertices and faces)
     cout << "Saving Mesh...\n";
-    mesh.save("mesh.obj"); // Save the mesh in an obj file
-    
+    mesh.save("C:/Users/Andrew Ayerh/Documents/GitHub/zed-sdk/tutorials/tutorial 5 - spatial mapping/cpp/mesh.obj"); // Save the mesh in an obj file
+
     // Disable tracking and mapping and close the camera
     zed.disableSpatialMapping();
     zed.disablePositionalTracking();
