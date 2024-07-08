@@ -139,7 +139,7 @@ void GLViewer::init(int argc, char **argv, sl::Mat &image, sl::Mat & pointcloud,
     camera_.setRotation(rot);
 
     draw_mesh_as_wire = false;
-    draw_live_point_cloud = true;
+    draw_live_point_cloud = false;
     dark_background = true;
 
     // Map glut function on this class methods

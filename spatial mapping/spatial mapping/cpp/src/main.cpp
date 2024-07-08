@@ -42,7 +42,6 @@ void parse_args(int argc, char** argv, InitParameters& param, sl::Mat& roi);
 void print(std::string msg_prefix, sl::ERROR_CODE err_code = sl::ERROR_CODE::SUCCESS, std::string msg_suffix = "");
 
 int main(int argc, char** argv) {
-
     Camera zed;
     // Set configuration parameters for the ZED
     InitParameters init_parameters;
@@ -89,21 +88,21 @@ int main(int argc, char** argv) {
 
     // Set spatial mapping parameters
     SpatialMappingParameters spatial_mapping_parameters;
-    // Request a Point Cloud
-#if BUILD_MESH
+
+    // Request a high-resolution mesh
     spatial_mapping_parameters.map_type = SpatialMappingParameters::SPATIAL_MAP_TYPE::MESH;
-    Mesh map;
-#else
-    spatial_mapping_parameters.map_type = SpatialMappingParameters::SPATIAL_MAP_TYPE::FUSED_POINT_CLOUD;
-    FusedPointCloud map;
-#endif
+    spatial_mapping_parameters.resolution_meter = 0.01; // Set to the highest resolution (1 cm per voxel)
+
     // Set mapping range, it will set the resolution accordingly (a higher range, a lower resolution)
-    spatial_mapping_parameters.set(SpatialMappingParameters::MAPPING_RANGE::SHORT);
-    spatial_mapping_parameters.set(SpatialMappingParameters::MAPPING_RESOLUTION::HIGH);
-    // Request partial updates only (only the last updated chunks need to be re-draw)
+    spatial_mapping_parameters.range_meter = 5.0; // Adjust as needed for your scene size
+
+    // Request partial updates only (only the last updated chunks need to be re-drawn)
     spatial_mapping_parameters.use_chunk_only = true;
+
     // Stability counter defines how many times a stable 3D points should be seen before it is integrated into the spatial mapping
-    spatial_mapping_parameters.stability_counter = 4;
+    spatial_mapping_parameters.stability_counter = 40;
+
+    Mesh map;
 
     // Timestamp of the last fused point cloud requested
     chrono::high_resolution_clock::time_point ts_last;
@@ -111,7 +110,7 @@ int main(int argc, char** argv) {
     // Setup runtime parameters
     RuntimeParameters runtime_parameters;
     // Use low depth confidence to avoid introducing noise in the constructed model
-    runtime_parameters.confidence_threshold = 50;
+    runtime_parameters.confidence_threshold = 95;
 
     auto resolution = camera_infos.camera_configuration.resolution;
 
@@ -129,7 +128,6 @@ int main(int argc, char** argv) {
     viewer.init(argc, argv, image, point_cloud, zed.getCUDAStream());
 
     bool request_new_mesh = true;
-
     bool wait_for_mapping = true;
 
     sl::Timestamp timestamp_start;
@@ -138,8 +136,7 @@ int main(int argc, char** argv) {
     // Start the main loop
     while (viewer.isAvailable()) {
         // Grab a new image
-        if (zed.grab(runtime_parameters) == ERROR_CODE::SUCCESS)
-        {
+        if (zed.grab(runtime_parameters) == ERROR_CODE::SUCCESS) {
             // Retrieve the left image
             zed.retrieveImage(image, VIEW::LEFT, MEM::GPU, display_resolution);
             zed.retrieveMeasure(point_cloud, MEASURE::XYZBGRA, MEM::GPU, display_resolution);
@@ -175,8 +172,8 @@ int main(int argc, char** argv) {
         }
     }
 
-    // Save generated point cloud
-    map.save("MyMap", sl::MESH_FILE_FORMAT::PLY);
+    // Save generated mesh
+    map.save("HighQualityMesh", sl::MESH_FILE_FORMAT::PLY);
 
     // Free allocated memory before closing the camera
     image.free();
@@ -186,6 +183,7 @@ int main(int argc, char** argv) {
 
     return 0;
 }
+
 
 void parse_args(int argc, char** argv, InitParameters& param, sl::Mat& roi)
 {
