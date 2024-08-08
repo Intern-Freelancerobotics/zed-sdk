@@ -439,14 +439,18 @@ void FpcObj::pushToGPU() {
         glGenBuffers(2, vboID_);
     }
     glBindVertexArray(vaoID_);
+
     glBindBuffer(GL_ARRAY_BUFFER, vboID_[0]);
-    glBufferData(GL_ARRAY_BUFFER, vertices_.size() * 4 * sizeof (float), &vertices_[0], GL_DYNAMIC_DRAW);
-    glVertexAttribPointer(Shader::ATTRIB_VERTICES_POS, 4, GL_FLOAT, GL_FALSE, 0, 0);
-    glEnableVertexAttribArray(Shader::ATTRIB_VERTICES_POS);
+    glBufferData(GL_ARRAY_BUFFER, vertices_.size() * 4 * sizeof (float), &vertices_[0], GL_DYNAMIC_DRAW);   
+    //Adding Shader Color for gpu to compute on GPU 1
+    //Assign each vertex at its post processing 
+        glVertexAttribPointer(Shader::ATTRIB_VERTICES_POS, 4, GL_FLOAT, GL_FALSE, 0, 0);
+        glEnableVertexAttribArray(Shader::ATTRIB_VERTICES_POS);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboID_[1]);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices_.size() * sizeof (unsigned int), &indices_[0], GL_DYNAMIC_DRAW);
     nb_v = indices_.size();
+    //------------------------------------------------------
     glBindVertexArray(0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);

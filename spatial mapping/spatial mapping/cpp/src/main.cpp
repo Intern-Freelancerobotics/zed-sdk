@@ -26,11 +26,10 @@
  // ZED includes
 #include <sl/Camera.hpp>
 
-// Sample includes
+// Sample include
 #include "GLViewer.hpp"
 
 #include <opencv2/opencv.hpp>
-
 // Using std and sl namespaces
 using namespace std;
 using namespace sl;
@@ -49,6 +48,7 @@ int main(int argc, char** argv) {
     init_parameters.coordinate_units = UNIT::METER;
     init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL's coordinate system is right_handed
     init_parameters.depth_maximum_distance = 8.;
+    init_parameters.depth_stabilization = true;
 
     sl::Mat roi;
     parse_args(argc, argv, init_parameters, roi);
@@ -88,29 +88,25 @@ int main(int argc, char** argv) {
 
     // Set spatial mapping parameters
     SpatialMappingParameters spatial_mapping_parameters;
-
     // Request a high-resolution mesh
     spatial_mapping_parameters.map_type = SpatialMappingParameters::SPATIAL_MAP_TYPE::MESH;
     spatial_mapping_parameters.resolution_meter = 0.01; // Set to the highest resolution (1 cm per voxel)
-
     // Set mapping range, it will set the resolution accordingly (a higher range, a lower resolution)
-    spatial_mapping_parameters.range_meter = 5.0; // Adjust as needed for your scene size
-
+    spatial_mapping_parameters.range_meter = 1.5; // Adjust as needed for your scene size
     // Request partial updates only (only the last updated chunks need to be re-drawn)
     spatial_mapping_parameters.use_chunk_only = true;
-
     // Stability counter defines how many times a stable 3D points should be seen before it is integrated into the spatial mapping
-    spatial_mapping_parameters.stability_counter = 40;
+    spatial_mapping_parameters.stability_counter = 50;
 
     Mesh map;
-
     // Timestamp of the last fused point cloud requested
     chrono::high_resolution_clock::time_point ts_last;
 
     // Setup runtime parameters
     RuntimeParameters runtime_parameters;
     // Use low depth confidence to avoid introducing noise in the constructed model
-    runtime_parameters.confidence_threshold = 95;
+    runtime_parameters.confidence_threshold = 50;
+    runtime_parameters.texture_confidence_threshold = 100;
 
     auto resolution = camera_infos.camera_configuration.resolution;
 
@@ -142,6 +138,7 @@ int main(int argc, char** argv) {
             zed.retrieveMeasure(point_cloud, MEASURE::XYZBGRA, MEM::GPU, display_resolution);
             // Retrieve the camera pose data
             tracking_state = zed.getPosition(pose);
+
             viewer.updateCameraPose(pose.pose_data, tracking_state);
 
             if (tracking_state == POSITIONAL_TRACKING_STATE::OK) {
@@ -172,8 +169,13 @@ int main(int argc, char** argv) {
         }
     }
 
+    // Filter the mesh to keep only the desired parts
+    MeshFilterParameters filter_params;
+    filter_params.set(sl::MeshFilterParameters::MESH_FILTER::MEDIUM); // You can adjust this to MEDIUM or HIGH
+    //map.filter(filter_params);
+
     // Save generated mesh
-    map.save("HighQualityMesh", sl::MESH_FILE_FORMAT::PLY);
+    map.save("MeshFiltered", sl::MESH_FILE_FORMAT::PLY);
 
     // Free allocated memory before closing the camera
     image.free();
@@ -183,7 +185,6 @@ int main(int argc, char** argv) {
 
     return 0;
 }
-
 
 void parse_args(int argc, char** argv, InitParameters& param, sl::Mat& roi)
 {
@@ -235,7 +236,7 @@ void parse_args(int argc, char** argv, InitParameters& param, sl::Mat& roi)
         }
         else if ((arg.find(".png") != string::npos) || ((arg.find(".jpg") != string::npos))) {
             roi.read(arg.c_str());
-            cout << "[Sample] Using Region of intererest from " << arg << endl;
+            cout << "[Sample] Using Region of interest from " << arg << endl;
         }
     }
 }
